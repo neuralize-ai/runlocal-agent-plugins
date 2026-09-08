@@ -8,7 +8,7 @@
       "name": "runlocal",
       "source": "./plugins/runlocal",
       "description": "Prepare, validate, and upload model specifications with rx. Keep private weights local.",
-      "version": "0.1.0"
+      "version": "0.1.1"
     }
   ],
   "metadata": {

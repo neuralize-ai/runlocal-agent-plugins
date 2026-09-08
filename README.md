@@ -15,14 +15,14 @@ rx login
 For Codex, run in your terminal:
 
 ```sh
-codex plugin marketplace add kinghchan/runlocal-agent-plugins
+codex plugin marketplace add neuralize-ai/runlocal-agent-plugins
 codex plugin add runlocal@runlocal
 ```
 
 For Claude Code, run inside Claude:
 
 ```text
-/plugin marketplace add kinghchan/runlocal-agent-plugins
+/plugin marketplace add neuralize-ai/runlocal-agent-plugins
 /plugin install runlocal@runlocal
 ```
 
