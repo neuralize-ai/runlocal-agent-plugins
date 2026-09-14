@@ -1,11 +1,11 @@
 {
   "name": "runlocal",
-  "version": "0.1.1",
-  "description": "Prepare, validate, and upload model specifications with rx. Keep private weights local.",
+  "version": "0.2.0",
+  "description": "Prepare, validate, and upload model graph requests through the Runlocal HTTP API.",
   "author": {
     "name": "Runlocal"
   },
-  "homepage": "https://dropzone-eight-rust.vercel.app/docs/agents",
+  "homepage": "https://www.runlocal.ai/docs/agents",
   "repository": "https://github.com/neuralize-ai/runlocal-agent-plugins",
   "skills": [
     "./skills/"

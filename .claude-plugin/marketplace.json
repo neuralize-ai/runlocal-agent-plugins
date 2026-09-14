@@ -7,11 +7,11 @@
     {
       "name": "runlocal",
       "source": "./plugins/runlocal",
-      "description": "Prepare, validate, and upload model specifications with rx. Keep private weights local.",
-      "version": "0.1.1"
+      "description": "Prepare, validate, and upload model graph requests through the Runlocal HTTP API.",
+      "version": "0.2.0"
     }
   ],
   "metadata": {
-    "description": "Runlocal skills for preparing and uploading model specifications."
+    "description": "Runlocal skills for preparing and uploading model graph requests through the HTTP API."
   }
 }

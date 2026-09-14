@@ -1,36 +1,33 @@
 ---
 name: runlocal
-description: Prepare, validate, upload, list, or download Runlocal model specifications with the rx CLI. Use when the user wants to submit a model from their ML codebase to Runlocal, keeping private weights local.
+description: Prepare, validate, upload, list, or download Runlocal model graph requests through the HTTP API. Use when the user wants to submit a model graph from an ML codebase while keeping private weights local.
 ---
 
 # Runlocal
 
-Use the installed `rx` CLI to prepare the selected inference program and manage
-its requests. An upload stores a model specification; it does not run optimization.
+Use Runlocal's HTTP API directly. No Runlocal CLI or Python package is required.
+An upload stores a model graph request for inspection; it does not start
+optimization.
 
-## Read the installed instructions
+## Discover the current contract
 
-Run `rx --version` and `rx guide`. This skill requires
-`runlocal-external-interface` 0.2.0 or newer. The guide and `rx schema authoring`
-are the authority for the installed version's workflow and fields.
+Start at:
 
-If the tool is missing, install it in a separate environment:
-
-```sh
-uv tool install --python 3.12 "runlocal-external-interface[onnx]>=0.2.0"
+```text
+https://courteous-perch-757.eu-west-1.convex.site/api/v1
 ```
 
-For an older installation, use `uv tool upgrade runlocal-external-interface`.
-If `rx` is not on PATH, use `uv tool dir --bin` to locate it. Keep the customer's
-ML environment and dependency versions intact. If uv is missing, follow
-https://docs.astral.sh/uv/getting-started/installation/.
+Fetch the discovery document, then read its `agent_guide` and fetch the linked
+request schema, bundle schema, and example. Treat those live resources as the
+authority for endpoints, fields, encoding, authentication, limits, and result
+handling. Do not reconstruct the protocol from this skill or require an
+installed package.
 
-## Prepare the requested scope
+## Prepare the model graph
 
-For a new model, inspect its code and inference entry point. Ask which model
-to use only if the intended boundary is unclear. Use the project's own ML
-environment for export and local comparisons. Read `rx capabilities` and the
-authoring schema; `rx example --out DIR` supplies a runnable starting point.
+Inspect the selected inference entry point and use the project's existing ML
+environment for export and local comparisons. Ask which graph to use only when
+the intended boundary is unclear.
 
 Preserve input/output behavior, dynamic dimensions, state, and shared parameter
 identities. Keep private weights and derived private values local as explicit
@@ -38,33 +35,49 @@ runtime parameters. Removing or zeroing weights after export does not preserve
 the program. A tensor can also be a legitimate public constant: review its origin.
 Record unsupported regions and unknown facts as requirements instead of guessing.
 
-Compare the parameterized export against the original model locally on supported
-inputs. Describe the cases checked and any remaining gaps. Compile and validate
-with `rx`; use the installed guide for exact commands and completeness policy.
-For requests to list or download existing submissions, perform that operation
-directly without preparing a new model.
+Build the request JSON and exact object catalog from the live schemas. Preserve
+the protocol's field names even when the product calls the submission a model
+graph. Compare a parameterized export against the original locally when the
+project can execute both, and describe the cases checked and remaining gaps.
 
-## Review and send
+## Review every byte
 
-Run `rx upload BUNDLE --dry-run` before an upload. It needs no authentication
-and sends no data. Review the exact files, tensor findings, local-only parameters,
-and validation scope. The preview is metadata only; it cannot prove that a model
-contains no private values. Native ONNX inspection can print values, so keep
-private tensor contents out of conversation output.
+Before any network request, review the request text and every object that will
+be encoded into the bundle. Summarize object sizes and digests, local-only
+parameters, and unresolved requirements without printing private tensor values.
+Neither the schema nor the server can prove that submitted artifacts contain no
+private or derived weight values.
 
-Summarize what will be sent and any unresolved requirements. If the user has
-authorized that upload, proceed; otherwise ask after the bundle is reviewable.
-Stop and repair or explain any unresolved private-data disclosure before sending.
-Do not upload simply because the user asked to prepare or validate a model.
+The validation endpoint transmits every supplied byte to Runlocal even though it
+does not persist the request. A request to prepare locally does not authorize
+validation or upload. If the user explicitly asked to validate or upload, that
+instruction supplies the corresponding authorization; otherwise wait until the
+bundle is reviewable before asking.
 
-Use `rx auth status` to check the selected account. When login is needed, run
-`rx login` and let the user complete browser authentication. For a remote
-terminal, use `rx login --no-browser` and show its verification link and code.
-Never ask for passwords or tokens in chat. An existing `RUNLOCAL_API_TOKEN`
-takes precedence over the saved session; preserve the user's selected account
-and API origin.
+## Authenticate
 
-Run `rx upload BUNDLE`, then confirm the returned ID and revision digest in
-`rx list` (follow pagination as needed). Report the request ID and workspace
-link. On failure, use the CLI's structured diagnostics and repair actions.
-Do not silently change a lineage, revision, or model scope to bypass a conflict.
+Prefer an existing `RUNLOCAL_API_TOKEN` and send it as `Authorization: Bearer
+<token>` without displaying it. Otherwise follow the live guide's WorkOS browser
+device flow and keep the resulting access token out of source files, logs, and
+conversation output. Verify the selected identity with the live guide's
+`/api/v1/auth/status` route.
+
+## Validate and upload
+
+Encode the transport exactly as the bundle schema requires. POST it first to
+the discovered validation endpoint. Fix schema or content failures before
+uploading; do not blindly retry rejected input. On success, POST the same reviewed
+body to the discovered requests endpoint.
+
+An identical upload is safe to retry. A conflict means the same lineage and
+revision already identify different content; inspect it and choose a truthful
+new revision rather than silently changing scope. Use bounded exponential
+backoff only for `429` and temporary `5xx` responses.
+
+Report the returned request ID, revision digest, verification scope, and a
+workspace link constructed from the discovery document. Do not describe wire or
+digest verification as semantic validation, privacy validation, or optimization.
+
+For list, read, and download requests, use the discovered request endpoints
+directly and preserve pagination cursors as opaque values. Verify downloaded
+object bytes against the retained catalog before using them.
