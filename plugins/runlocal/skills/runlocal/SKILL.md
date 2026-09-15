@@ -11,13 +11,14 @@ optimization.
 
 ## Discover the current contract
 
-Start at:
+Start at the stable service manifest:
 
 ```text
-https://courteous-perch-757.eu-west-1.convex.site/api/v1
+https://www.runlocal.ai/.well-known/runlocal.json
 ```
 
-Fetch the discovery document, then read its `agent_guide` and fetch the linked
+Fetch its `discovery` URL, then fetch that discovery document. Read the linked
+`agent_guide` and fetch the linked
 request schema, bundle schema, and example. Treat those live resources as the
 authority for endpoints, fields, encoding, authentication, limits, and result
 handling. Do not reconstruct the protocol from this skill or require an
