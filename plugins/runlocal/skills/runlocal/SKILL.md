@@ -1,201 +1,163 @@
 ---
 name: runlocal
-description: Prepare, check, validate, upload, list, or download Runlocal model graph requests through the HTTP API. Use when the user wants to submit a model graph from an ML codebase while keeping trained weights and source code private.
+description: Prepare model workloads for Runlocal from an ML codebase, assess gaps and evidence, and check or submit requests when asked. Also use to inspect or retrieve existing Runlocal requests. Keep private weights local.
 ---
 
 # Runlocal
 
-Use Runlocal's HTTP API directly. No Runlocal CLI or Python package is required.
-An upload stores a model graph request for inspection; it does not start
-optimization.
+Turn the user's model code into an honest, useful model workload request.
+Preserve its behavior, keep private values local, and make uncertainty visible.
+Submitting a request stores it for inspection; it does not start optimization.
 
-## Privacy first
+## Establish the task
 
-The user's data is theirs. Nothing leaves their machine without their explicit
-permission for that specific transmission. Before any request that carries
-their data, show exactly what would be sent and ask: the request text, sample
-inputs, JSON graphs, optional source artifacts, and anything that describes
-their source code, including file names, function names, notes, and summaries.
-Permission to prepare is not permission to send. Permission to check is not
-permission to validate or upload.
+Determine whether the user wants inspection, local preparation, remote checking,
+submission, or retrieval. Do not turn local preparation into an upload workflow.
+For an existing request, use the read path; do not repeat model preparation.
 
-Runlocal does not accept trained weights: values learned from data, and
-anything derived from them, such as a folded scale or a merged bias. Declare
-those as weights, private and supplied at run time, so their values never
-appear in any file, external data, sample, graph, note, or check.
-Everything else that decides what the model computes must be sent, and must
-be exact: initializers and constants that are not trained, such as shapes,
-axes, indices, masks, scales fixed by the architecture, and tables computed by
-formula. The weight policy is where each tensor is sorted into one of these
-two, and it is the decision that matters most: a constant declared as a
-weight strips meaning the model needs, and a weight declared as a constant
-leaks training. Decide from the tensor's origin in the source, and when its
-origin is unclear, ask. If a faithful export that separates the two cannot be
-produced, stop and explain the blocker rather than sending an approximation.
-
-Sort by origin, per tensor:
-
-- Learned by training, or computed from learned values: a weight. This
-  includes quantized weights, and the scales and zero points computed from
-  them.
-- Computed from calibration data, such as activation scales and zero points:
-  a weight unless the user says it may be sent.
-- Fixed by the architecture or computed by formula, such as shapes, axes,
-  indices, masks, rotary tables, and constant scales: a constant, sent in
-  the file with its exact values.
-- A float tensor produced by folding a dequantization or any other operation
-  over a weight is a weight that has leaked. Undo the fold.
-
-A quantized model needs its contract to say so. As written, the quantize and
-dequantize pairs run in float, which forbids the fused integer kernels the
-model was quantized for; the `quantized` numerics term grants them, under an
-accumulation precision and an output tolerance. The tolerance is the user's
-decision about their model's accuracy: ask for it, in steps of the output's
-scale for quantized outputs and absolute plus relative for float outputs, and
-never invent it. The term applies only where the model already quantizes;
-nothing else may be quantized on Runlocal's side.
-
-Precision over convenience. The JSON graph must describe the model exactly:
-never guess a shape, a dtype, an operator's meaning, a tied weight, or a piece
-of state. Whatever you cannot establish, raise with the
-user and record in the request as an unknown, each with what would resolve
-it: an export the user could allow, a fact they could supply, a file they
-could share, or a narrower scope. The report from the check endpoint lists the
-unknowns it finds; bring those to the user the same way.
+Inspect the code and configuration before asking questions. Establish the model
+variant, callable boundary, relevant inputs and sizes, execution mode, state,
+and intended improvement. Ask for choices the code cannot establish. Do not
+silently substitute a smaller component for the requested model. Keep a named
+component's coverage distinct from coverage of the full model.
 
 ## Discover the current contract
 
-Start at the stable service manifest:
+Start at https://www.runlocal.ai/.well-known/runlocal.json and follow its
+discovery URL. Read the linked agent guide. Fetch the schemas, capabilities,
+and public examples relevant to this task, following the returned links.
 
-```text
-https://www.runlocal.ai/.well-known/runlocal.json
-```
+These resources own the accepted formats, field definitions, semantic rules,
+tools, authentication, endpoints, and limits. Use them instead of remembered
+payloads or a protocol version written elsewhere. Do not invent a CLI, exporter,
+adapter, or service capability. If discovery is unavailable, local inspection
+can continue, but report that current compatibility has not been checked.
 
-Fetch its `discovery` URL, then fetch that discovery document. Read the linked
-`agent_guide`. Fetch the linked request, graph, bundle, validation report, and
-operator extension schemas. Fetch the ONNX operator catalog and the public
-examples too. Treat those live resources as the authority for endpoints,
-fields, encoding, authentication, limits, and result handling. Do not
-reconstruct the protocol from this skill or require an installed package.
+## Prepare from the actual source
 
-## Prepare the model graph
+Use the project's existing model tools and environment. Preserve the selected
+configuration, input domain, control flow, state, weight identity and sharing,
+and constants that determine behavior. Separate the source reference from any
+captured graph or proposed replacement.
 
-Inspect the selected inference entry point and use the project's existing ML
-environment for export and local comparisons. Ask which graph to use only when
-the intended boundary is unclear.
+Use supported capture or export tooling. Do not manually reconstruct an
+algorithm just to fit a submission format. If capture fails, identify the
+affected computation and preserve its original implementation where the current
+contract permits. Record unsupported regions. Ask before narrowing scope or
+introducing a translated replacement; label that replacement as a candidate,
+not a direct export.
 
-Preserve input/output behavior, dynamic dimensions, state, tied weights, and
-every constant the computation depends on. Keep trained weights and values
-derived from them local, declared as weights supplied at run time. Removing or
-zeroing weights after export does not preserve the program, and neither does
-dropping a constant. Record unsupported regions and unknown facts as unknowns,
-with the possible resolutions, instead of guessing.
+Use declared weight interfaces to keep supplied values separate from computation.
+Synthetic weights can support local tests without disclosing trained weights;
+they do not establish trained-model accuracy. Do not hide a cast, transpose, or
+other transformation in a weight binding.
 
-Every operator the model applies is registered in the request, standard
-operators included, with the opset it runs at, how many nodes apply it, and
-its source of meaning. Resolve a standard operator from the service's pinned
-ONNX catalog by domain, operator type, overload, and imported opset. Use the
-catalog's input, output, attribute, default, and type rules. Report an
-unsupported version as unresolved. Do not write a new description of a
-standard operator.
+Treat trained quantized codes, scales, zero points, and values derived from
+calibration as private. Keep them local unless the user has approved their exact
+disclosure. A local quantization tensor binding is relative to the weight source
+selected by the example. Confirm that this source can supply the complete stored
+tensor set. A sample, generated, or unbound weight source cannot stand in for
+that private storage. Use a public quantization-tensor file only for exact values
+that are safe to send.
 
-For another domain, prefer a local function made from resolved operators when
-it describes the behavior exactly. Resolve every operator in that function,
-including operators in `If`, `Loop`, and `Scan` graph bodies. If a local
-function cannot describe the behavior, use a versioned extension that follows
-the live operator extension schema. Bundle its schema and specification. State
-its inputs, outputs, attributes, shape rules, valid inputs, defaults, boundary
-behavior, numerical behavior, permitted nondeterminism, and state effects. Add
-a reference implementation and tests when practical. State whether the
-reference implementation defines the behavior or implements the separate
-specification. Resolve every operator that the extension uses.
+Keep the function body as the float computation. The function's quantization
+overlay is the only statement that a weight or graph value is quantized. Name
+each logical target and its stored codes and parameters there. Use a storage
+extension when packing, tensor order, or another physical layout needs a
+logical-to-physical mapping. A quantized tensor type or native QDQ nodes alone
+do not mark the function as quantized.
 
-An explicit unknown is valid while the request is being prepared, but it
-blocks each optimization scope that can reach it. Never treat an unknown as
-`Identity`, assume it is pure, or infer its behavior from a similar name. A
-link can help a reader find source code or documentation. It does not define
-an operator. The API checks the registry and every dependency against the JSON
-graphs.
+Quantization does not add a fusion permission. There is no fusion field. An
+optimizer may dequantize first, keep quantized values, or use a fused kernel if
+the result follows the function contract. Do not change the float body to request
+one of those choices.
 
-Every graph body names an authoritative JSON document that follows the live
-graph schema. It states every input, output, initializer, node, attribute,
-subgraph, and local function. It also states each tensor's type, data location,
-and byte count, and it never includes a weight's values. Build it with the
-project's model tools. An ONNX file or another source artifact is optional. If
-one helped make the graph, list it as the body's source. It records provenance
-only and does not define the computation. The API checks the JSON graph against
-the request. It does not need the source artifact and cannot check that the
-graph matches it.
+When the live API offers ONNX QDQ lift, use it only through the documented local
+or HTTP path. Review every finding. A supported lift needs complete direct Q to
+DQ, or DynamicQ to DQ, in the main graph under standard catalog-resolved ONNX
+semantics. One unsupported use leaves that graph unchanged. Do not manually
+remove QDQ nodes, infer parameters from names, or accept a partial lift. Static
+lifted parameters become an exact public content-addressed file, so include them
+in the disclosure review. If exact initializer values are missing, keep the graph
+unchanged and report the gap.
 
-Build the request JSON and exact object catalog from the live schemas. Preserve
-the protocol's field names even when the product calls the submission a model
-graph. Compare a weight-free export against the original locally when the
-project can execute both. Add a `source_equivalence` check that names the exact
-contract digest, subjects, procedure, cases, results, and evidence artifacts.
-Include boundary cases from the source behavior. For control flow, include
-both branches, zero iterations, early termination, and state changes when they
-apply. For neighborhood operators, include empty neighborhoods, boundary
-distances, duplicate points, and ordering when they apply. Record replacement
-tests under `replacement_equivalence`. Finite tests are evidence; they do not
-prove behavior for every input.
+If a required tolerance, semantic choice, or input restriction is not established,
+ask or record the gap. Do not choose it merely to make a check pass.
 
-## Check before encoding
+## State what is known and what was checked
 
-POST the request text with the JSON graphs and without optional source files
-to the discovered check endpoint. It stores nothing and answers a validation
-report with status 200 whether or not the request passed. Read every finding,
-pointer, repair, check result, and digest. Read each operator's definition,
-node validation, and backend support separately. Read the same separate fields
-for the model, each example, and each optimization target, together with source
-evidence, replacement evidence, and readiness. A resolved operator can still
-be unsupported. A supported operator can still have an invalid export. Finite
-evidence does not make an unresolved scope ready. Fix every diagnostic, then
-check again, until the diagnostics list is empty. Only then encode the bundle.
-Raise with the user what the report leaves incomplete: the unknowns it names,
-unsupported targets, and checks it could not run.
+Distinguish source observations, assumptions, missing information, successful
+capture, source comparisons, and backend support. One does not establish another.
+Use the current contract's evidence and uncertainty fields where supported.
+Scope each concern to the affected computation, explain its consequence, and
+state what would resolve it. A subjective confidence estimate is not proof or
+a measured probability. Do not invent fields to record one.
 
-## Review every byte
+Compare the prepared computation with the original locally when both can run.
+Choose cases from the source behavior, including relevant boundaries and control
+paths. Record the exact artifacts, procedure, cases, results, and limitations.
+Distinguish source-equivalence tests from tests of an optimized replacement.
+Finite comparisons are evidence, not proof for all inputs. If tests cannot run,
+say which were not run and why.
 
-Before any network request, review the request text and every object that will
-be encoded into the bundle, and show the user what will be sent: object names,
-sizes, and digests, which weights stay local, what the notes and names reveal
-about their code, and the unresolved unknowns. Never print private tensor
-values. Neither the schema nor the server can prove that submitted artifacts
-contain no weight values; that review is yours and the user's.
+## Review disclosure before transmission
 
-The check endpoint transmits the request text and every file included with it,
-and the validation endpoint transmits every byte of the bundle, even though
-neither persists the request. If the user explicitly asked to check, validate,
-or upload, that instruction supplies the corresponding authorization for what
-they named; otherwise wait until the request is reviewable, then ask before
-each step.
+Determine each tensor's origin. Keep trained weights and private derived values
+local. Retain exact public constants required by the computation; removing or
+zeroing values is not a faithful privacy measure. Resolve unclear origins before
+sending the affected artifacts.
 
-## Authenticate
+Review the actual request and selected files, not only their declared roles.
+Graphs, names, notes, samples, and source files can disclose information too.
+Show a concise transmission preview: scope, files and sizes, private values kept
+local, and remaining gaps. Do not print private tensor values or credentials.
 
-Prefer an existing `RUNLOCAL_API_TOKEN` and send it as `Authorization: Bearer
-<token>` without displaying it. Otherwise follow the live guide's WorkOS browser
-device flow and keep the resulting access token out of source files, logs, and
-conversation output. Verify the selected identity with the live guide's
-`/api/v1/auth/status` route.
+Remote checking and validation transmit data even when they do not store it.
+Act within the user's explicit authorization for the destination, data, and
+operation. Ask before expanding that scope; do not ask again for an unchanged
+action already authorized. Local preparation alone authorizes no transmission.
+Uploading executable content does not authorize running it remotely.
 
-## Validate and upload
+## Authenticate when needed
 
-Encode the transport exactly as the bundle schema requires. POST it first to
-the discovered validation endpoint. A rejection lists every finding, not only
-the first; fix them all before uploading, and do not blindly retry rejected
-input. On success, POST the same reviewed body to the discovered requests
-endpoint.
+Use `RUNLOCAL_API_KEY` as the API-key environment variable. Reuse an available
+key from it or a valid session token for the intended account. Do not put a
+session token in `RUNLOCAL_API_KEY` or display the variable's value.
+If neither is available, follow the live guide's device-code login flow and let
+the user complete browser sign-in. Verify the account through the documented
+authentication-status check. Use the session token for the requested task;
+do not start a new login for every POST or other authenticated request.
 
-An identical upload is safe to retry. A conflict means the same name and
-version already identify different content; inspect it and choose a truthful
-new version rather than silently changing scope. Use bounded exponential
-backoff only for `429` and temporary `5xx` responses.
+Keep session credentials in memory. Follow the live guide for renewal when
+available, and request a new sign-in only when the session cannot be renewed.
+An access denial is not a reason to repeat login indefinitely. Authentication
+does not grant permission to transmit more data than the user approved.
 
-Report the returned request ID, revision digest, verification scope, server
-validation report, and a workspace link constructed from the discovery
-document. Do not describe wire or digest verification as semantic validation,
-privacy validation, or optimization.
+For future use, offer an API key as an optional convenience, not a requirement
+for the current task. Create and persist one only with the user's approval of
+its purpose and secure storage location. Use a descriptive key name and a
+documented, session-authenticated creation interface. If the live guide does not
+expose one, direct the user to the workspace's key settings; do not call
+undocumented backend functions. Do not write credentials to the repository,
+request artifacts, chat, or logs. If approved secure storage is unavailable,
+continue with the session instead of creating a key. Make an approved stored
+key available to future requests through `RUNLOCAL_API_KEY`.
 
-For list, read, and download requests, use the discovered request endpoints
-directly and preserve pagination cursors as opaque values. Verify downloaded
-object bytes against the retained catalog before using them.
+## Check and hand off
+
+Follow the live guide for local checks and authorized remote operations. Treat
+invalid content, unresolved meaning, unsupported execution, and missing evidence
+as different outcomes. Fix errors within scope. Do not erase unknowns or change
+the model to obtain a clean report. Stop and explain when progress needs a new
+user decision or unavailable capability. Do not retry unchanged invalid requests.
+
+For submission, use the guide's validation and upload sequence. If reviewed
+content changes, review the change and confirm it remains within authorization.
+Use documented authentication without exposing secrets. For downloads, verify
+content identity before use and do not execute retrieved code merely to inspect it.
+
+Finish with the included and excluded scope, local or submitted artifact location,
+checks and their results, unresolved assumptions or blockers, and the next useful
+action. For a submission, include the returned identity and workspace link.
+Describe verification only as far as the evidence supports; upload success is
+not proof of semantic correctness, privacy, or optimization.
