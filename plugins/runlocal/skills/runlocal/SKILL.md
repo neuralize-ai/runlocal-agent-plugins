@@ -72,10 +72,11 @@ https://www.runlocal.ai/.well-known/runlocal.json
 ```
 
 Fetch its `discovery` URL, then fetch that discovery document. Read the linked
-`agent_guide` and fetch the linked request schema, graph schema, bundle
-schema, and example. Treat those live resources as the authority for
-endpoints, fields, encoding, authentication, limits, and result handling. Do
-not reconstruct the protocol from this skill or require an installed package.
+`agent_guide`. Fetch the linked request, graph, bundle, validation report, and
+operator extension schemas. Fetch the ONNX operator catalog and the public
+examples too. Treat those live resources as the authority for endpoints,
+fields, encoding, authentication, limits, and result handling. Do not
+reconstruct the protocol from this skill or require an installed package.
 
 ## Prepare the model graph
 
@@ -92,12 +93,29 @@ with the possible resolutions, instead of guessing.
 
 Every operator the model applies is registered in the request, standard
 operators included, with the opset it runs at, how many nodes apply it, and
-its meaning: the ONNX definition for a standard operator; for any other
-domain, the model's own local function, an operator extension, or an unknown.
-A vendor operator such as one from `com.microsoft` is not standard: prefer
-exporting it as a local function of standard operators, or state its meaning
-through an extension; declare an unknown only when neither is possible. The
-API checks the registry against the JSON graphs.
+its source of meaning. Resolve a standard operator from the service's pinned
+ONNX catalog by domain, operator type, overload, and imported opset. Use the
+catalog's input, output, attribute, default, and type rules. Report an
+unsupported version as unresolved. Do not write a new description of a
+standard operator.
+
+For another domain, prefer a local function made from resolved operators when
+it describes the behavior exactly. Resolve every operator in that function,
+including operators in `If`, `Loop`, and `Scan` graph bodies. If a local
+function cannot describe the behavior, use a versioned extension that follows
+the live operator extension schema. Bundle its schema and specification. State
+its inputs, outputs, attributes, shape rules, valid inputs, defaults, boundary
+behavior, numerical behavior, permitted nondeterminism, and state effects. Add
+a reference implementation and tests when practical. State whether the
+reference implementation defines the behavior or implements the separate
+specification. Resolve every operator that the extension uses.
+
+An explicit unknown is valid while the request is being prepared, but it
+blocks each optimization scope that can reach it. Never treat an unknown as
+`Identity`, assume it is pure, or infer its behavior from a similar name. A
+link can help a reader find source code or documentation. It does not define
+an operator. The API checks the registry and every dependency against the JSON
+graphs.
 
 Every graph body names an authoritative JSON document that follows the live
 graph schema. It states every input, output, initializer, node, attribute,
@@ -112,18 +130,29 @@ graph matches it.
 Build the request JSON and exact object catalog from the live schemas. Preserve
 the protocol's field names even when the product calls the submission a model
 graph. Compare a weight-free export against the original locally when the
-project can execute both, and describe the cases checked and remaining gaps.
+project can execute both. Add a `source_equivalence` check that names the exact
+contract digest, subjects, procedure, cases, results, and evidence artifacts.
+Include boundary cases from the source behavior. For control flow, include
+both branches, zero iterations, early termination, and state changes when they
+apply. For neighborhood operators, include empty neighborhoods, boundary
+distances, duplicate points, and ordering when they apply. Record replacement
+tests under `replacement_equivalence`. Finite tests are evidence; they do not
+prove behavior for every input.
 
 ## Check before encoding
 
 POST the request text with the JSON graphs and without optional source files
 to the discovered check endpoint. It stores nothing and answers a validation
-report with status 200 whether or not the request passed: every finding with
-a pointer and a repair, the status of each check, and the digests once
-everything passed. Fix every diagnostic, then check again, until the
-diagnostics list is empty. Only then encode the bundle. Raise with the user
-what the report leaves incomplete: the unknowns it names, and any check it
-could not run.
+report with status 200 whether or not the request passed. Read every finding,
+pointer, repair, check result, and digest. Read each operator's definition,
+node validation, and backend support separately. Read the same separate fields
+for the model, each example, and each optimization target, together with source
+evidence, replacement evidence, and readiness. A resolved operator can still
+be unsupported. A supported operator can still have an invalid export. Finite
+evidence does not make an unresolved scope ready. Fix every diagnostic, then
+check again, until the diagnostics list is empty. Only then encode the bundle.
+Raise with the user what the report leaves incomplete: the unknowns it names,
+unsupported targets, and checks it could not run.
 
 ## Review every byte
 
@@ -162,9 +191,10 @@ version already identify different content; inspect it and choose a truthful
 new version rather than silently changing scope. Use bounded exponential
 backoff only for `429` and temporary `5xx` responses.
 
-Report the returned request ID, revision digest, verification scope, and a
-workspace link constructed from the discovery document. Do not describe wire or
-digest verification as semantic validation, privacy validation, or optimization.
+Report the returned request ID, revision digest, verification scope, server
+validation report, and a workspace link constructed from the discovery
+document. Do not describe wire or digest verification as semantic validation,
+privacy validation, or optimization.
 
 For list, read, and download requests, use the discovered request endpoints
 directly and preserve pagination cursors as opaque values. Verify downloaded
