@@ -14,15 +14,15 @@ optimization.
 The user's data is theirs. Nothing leaves their machine without their explicit
 permission for that specific transmission. Before any request that carries
 their data, show exactly what would be sent and ask: the request text, sample
-inputs, ONNX files, graph renderings, and anything that describes their source
-code, including file names, function names, notes, and summaries. Permission
-to prepare is not permission to send. Permission to check is not permission to
-validate or upload.
+inputs, JSON graphs, optional source artifacts, and anything that describes
+their source code, including file names, function names, notes, and summaries.
+Permission to prepare is not permission to send. Permission to check is not
+permission to validate or upload.
 
 Runlocal does not accept trained weights: values learned from data, and
 anything derived from them, such as a folded scale or a merged bias. Declare
 those as weights, private and supplied at run time, so their values never
-appear in any file, external data, sample, rendering, note, or check.
+appear in any file, external data, sample, graph, note, or check.
 Everything else that decides what the model computes must be sent, and must
 be exact: initializers and constants that are not trained, such as shapes,
 axes, indices, masks, scales fixed by the architecture, and tables computed by
@@ -55,9 +55,9 @@ scale for quantized outputs and absolute plus relative for float outputs, and
 never invent it. The term applies only where the model already quantizes;
 nothing else may be quantized on Runlocal's side.
 
-Precision over convenience. The graph and its rendering must describe the
-model exactly: never guess a shape, a dtype, an operator's meaning, a tied
-weight, or a piece of state. Whatever you cannot establish, raise with the
+Precision over convenience. The JSON graph must describe the model exactly:
+never guess a shape, a dtype, an operator's meaning, a tied weight, or a piece
+of state. Whatever you cannot establish, raise with the
 user and record in the request as an unknown, each with what would resolve
 it: an export the user could allow, a fact they could supply, a file they
 could share, or a narrower scope. The report from the check endpoint lists the
@@ -97,17 +97,17 @@ domain, the model's own local function, an operator extension, or an unknown.
 A vendor operator such as one from `com.microsoft` is not standard: prefer
 exporting it as a local function of standard operators, or state its meaning
 through an extension; declare an unknown only when neither is possible. The
-API checks the registry against the renderings.
+API checks the registry against the JSON graphs.
 
-Every ONNX file in the request is accompanied by its graph rendering: the JSON
-document the live graph schema defines, written from the exported file's bytes
-with the project's own ONNX tooling. It states every input, output,
-initializer, node, attribute, subgraph, and local function, each tensor's type
-and how many data bytes it carries, and never a weight's values, and it names
-the file's digest. Render it mechanically from the parsed model, never by
-hand. List it beside the file and name both in the function body. The API
-checks the rendering against the request; it cannot check that the rendering
-is faithful to the file. That faithfulness is your responsibility.
+Every graph body names an authoritative JSON document that follows the live
+graph schema. It states every input, output, initializer, node, attribute,
+subgraph, and local function. It also states each tensor's type, data location,
+and byte count, and it never includes a weight's values. Build it with the
+project's model tools. An ONNX file or another source artifact is optional. If
+one helped make the graph, list it as the body's source. It records provenance
+only and does not define the computation. The API checks the JSON graph against
+the request. It does not need the source artifact and cannot check that the
+graph matches it.
 
 Build the request JSON and exact object catalog from the live schemas. Preserve
 the protocol's field names even when the product calls the submission a model
@@ -116,7 +116,7 @@ project can execute both, and describe the cases checked and remaining gaps.
 
 ## Check before encoding
 
-POST the request text, with the graph renderings and without the ONNX bytes,
+POST the request text with the JSON graphs and without optional source files
 to the discovered check endpoint. It stores nothing and answers a validation
 report with status 200 whether or not the request passed: every finding with
 a pointer and a repair, the status of each check, and the digests once
