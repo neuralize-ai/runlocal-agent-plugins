@@ -30,22 +30,22 @@ Inspect the selected inference entry point and use the project's existing ML
 environment for export and local comparisons. Ask which graph to use only when
 the intended boundary is unclear.
 
-Preserve input/output behavior, dynamic dimensions, state, and shared parameter
-identities. Keep private weights and derived private values local as explicit
-runtime parameters. Removing or zeroing weights after export does not preserve
+Preserve input/output behavior, dynamic dimensions, state, and tied weights.
+Keep private weights and derived private values local, declared as weights
+supplied at run time. Removing or zeroing weights after export does not preserve
 the program. A tensor can also be a legitimate public constant: review its origin.
-Record unsupported regions and unknown facts as requirements instead of guessing.
+Record unsupported regions and unknown facts as unknowns instead of guessing.
 
 Build the request JSON and exact object catalog from the live schemas. Preserve
 the protocol's field names even when the product calls the submission a model
-graph. Compare a parameterized export against the original locally when the
+graph. Compare a weight-free export against the original locally when the
 project can execute both, and describe the cases checked and remaining gaps.
 
 ## Review every byte
 
 Before any network request, review the request text and every object that will
-be encoded into the bundle. Summarize object sizes and digests, local-only
-parameters, and unresolved requirements without printing private tensor values.
+be encoded into the bundle. Summarize object sizes and digests, private
+weights, and unresolved unknowns without printing private tensor values.
 Neither the schema nor the server can prove that submitted artifacts contain no
 private or derived weight values.
 
@@ -70,9 +70,9 @@ the discovered validation endpoint. Fix schema or content failures before
 uploading; do not blindly retry rejected input. On success, POST the same reviewed
 body to the discovered requests endpoint.
 
-An identical upload is safe to retry. A conflict means the same lineage and
-revision already identify different content; inspect it and choose a truthful
-new revision rather than silently changing scope. Use bounded exponential
+An identical upload is safe to retry. A conflict means the same name and
+version already identify different content; inspect it and choose a truthful
+new version rather than silently changing scope. Use bounded exponential
 backoff only for `429` and temporary `5xx` responses.
 
 Report the returned request ID, revision digest, verification scope, and a
