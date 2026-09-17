@@ -1,6 +1,6 @@
 ---
 name: runlocal
-description: Prepare, validate, upload, list, or download Runlocal model graph requests through the HTTP API. Use when the user wants to submit a model graph from an ML codebase while keeping private weights local.
+description: Prepare, check, validate, upload, list, or download Runlocal model graph requests through the HTTP API. Use when the user wants to submit a model graph from an ML codebase while keeping trained weights and source code private.
 ---
 
 # Runlocal
@@ -8,6 +8,60 @@ description: Prepare, validate, upload, list, or download Runlocal model graph r
 Use Runlocal's HTTP API directly. No Runlocal CLI or Python package is required.
 An upload stores a model graph request for inspection; it does not start
 optimization.
+
+## Privacy first
+
+The user's data is theirs. Nothing leaves their machine without their explicit
+permission for that specific transmission. Before any request that carries
+their data, show exactly what would be sent and ask: the request text, sample
+inputs, ONNX files, graph renderings, and anything that describes their source
+code, including file names, function names, notes, and summaries. Permission
+to prepare is not permission to send. Permission to check is not permission to
+validate or upload.
+
+Runlocal does not accept trained weights: values learned from data, and
+anything derived from them, such as a folded scale or a merged bias. Declare
+those as weights, private and supplied at run time, so their values never
+appear in any file, external data, sample, rendering, note, or check.
+Everything else that decides what the model computes must be sent, and must
+be exact: initializers and constants that are not trained, such as shapes,
+axes, indices, masks, scales fixed by the architecture, and tables computed by
+formula. The weight policy is where each tensor is sorted into one of these
+two, and it is the decision that matters most: a constant declared as a
+weight strips meaning the model needs, and a weight declared as a constant
+leaks training. Decide from the tensor's origin in the source, and when its
+origin is unclear, ask. If a faithful export that separates the two cannot be
+produced, stop and explain the blocker rather than sending an approximation.
+
+Sort by origin, per tensor:
+
+- Learned by training, or computed from learned values: a weight. This
+  includes quantized weights, and the scales and zero points computed from
+  them.
+- Computed from calibration data, such as activation scales and zero points:
+  a weight unless the user says it may be sent.
+- Fixed by the architecture or computed by formula, such as shapes, axes,
+  indices, masks, rotary tables, and constant scales: a constant, sent in
+  the file with its exact values.
+- A float tensor produced by folding a dequantization or any other operation
+  over a weight is a weight that has leaked. Undo the fold.
+
+A quantized model needs its contract to say so. As written, the quantize and
+dequantize pairs run in float, which forbids the fused integer kernels the
+model was quantized for; the `quantized` numerics term grants them, under an
+accumulation precision and an output tolerance. The tolerance is the user's
+decision about their model's accuracy: ask for it, in steps of the output's
+scale for quantized outputs and absolute plus relative for float outputs, and
+never invent it. The term applies only where the model already quantizes;
+nothing else may be quantized on Runlocal's side.
+
+Precision over convenience. The graph and its rendering must describe the
+model exactly: never guess a shape, a dtype, an operator's meaning, a tied
+weight, or a piece of state. Whatever you cannot establish, raise with the
+user and record in the request as an unknown, each with what would resolve
+it: an export the user could allow, a fact they could supply, a file they
+could share, or a narrower scope. The report from the check endpoint lists the
+unknowns it finds; bring those to the user the same way.
 
 ## Discover the current contract
 
@@ -18,11 +72,10 @@ https://www.runlocal.ai/.well-known/runlocal.json
 ```
 
 Fetch its `discovery` URL, then fetch that discovery document. Read the linked
-`agent_guide` and fetch the linked
-request schema, bundle schema, and example. Treat those live resources as the
-authority for endpoints, fields, encoding, authentication, limits, and result
-handling. Do not reconstruct the protocol from this skill or require an
-installed package.
+`agent_guide` and fetch the linked request schema, graph schema, bundle
+schema, and example. Treat those live resources as the authority for
+endpoints, fields, encoding, authentication, limits, and result handling. Do
+not reconstruct the protocol from this skill or require an installed package.
 
 ## Prepare the model graph
 
@@ -30,30 +83,63 @@ Inspect the selected inference entry point and use the project's existing ML
 environment for export and local comparisons. Ask which graph to use only when
 the intended boundary is unclear.
 
-Preserve input/output behavior, dynamic dimensions, state, and tied weights.
-Keep private weights and derived private values local, declared as weights
-supplied at run time. Removing or zeroing weights after export does not preserve
-the program. A tensor can also be a legitimate public constant: review its origin.
-Record unsupported regions and unknown facts as unknowns instead of guessing.
+Preserve input/output behavior, dynamic dimensions, state, tied weights, and
+every constant the computation depends on. Keep trained weights and values
+derived from them local, declared as weights supplied at run time. Removing or
+zeroing weights after export does not preserve the program, and neither does
+dropping a constant. Record unsupported regions and unknown facts as unknowns,
+with the possible resolutions, instead of guessing.
+
+Every operator the model applies is registered in the request, standard
+operators included, with the opset it runs at, how many nodes apply it, and
+its meaning: the ONNX definition for a standard operator; for any other
+domain, the model's own local function, an operator extension, or an unknown.
+A vendor operator such as one from `com.microsoft` is not standard: prefer
+exporting it as a local function of standard operators, or state its meaning
+through an extension; declare an unknown only when neither is possible. The
+API checks the registry against the renderings.
+
+Every ONNX file in the request is accompanied by its graph rendering: the JSON
+document the live graph schema defines, written from the exported file's bytes
+with the project's own ONNX tooling. It states every input, output,
+initializer, node, attribute, subgraph, and local function, each tensor's type
+and how many data bytes it carries, and never a weight's values, and it names
+the file's digest. Render it mechanically from the parsed model, never by
+hand. List it beside the file and name both in the function body. The API
+checks the rendering against the request; it cannot check that the rendering
+is faithful to the file. That faithfulness is your responsibility.
 
 Build the request JSON and exact object catalog from the live schemas. Preserve
 the protocol's field names even when the product calls the submission a model
 graph. Compare a weight-free export against the original locally when the
 project can execute both, and describe the cases checked and remaining gaps.
 
+## Check before encoding
+
+POST the request text, with the graph renderings and without the ONNX bytes,
+to the discovered check endpoint. It stores nothing and answers a validation
+report with status 200 whether or not the request passed: every finding with
+a pointer and a repair, the status of each check, and the digests once
+everything passed. Fix every diagnostic, then check again, until the
+diagnostics list is empty. Only then encode the bundle. Raise with the user
+what the report leaves incomplete: the unknowns it names, and any check it
+could not run.
+
 ## Review every byte
 
 Before any network request, review the request text and every object that will
-be encoded into the bundle. Summarize object sizes and digests, private
-weights, and unresolved unknowns without printing private tensor values.
-Neither the schema nor the server can prove that submitted artifacts contain no
-private or derived weight values.
+be encoded into the bundle, and show the user what will be sent: object names,
+sizes, and digests, which weights stay local, what the notes and names reveal
+about their code, and the unresolved unknowns. Never print private tensor
+values. Neither the schema nor the server can prove that submitted artifacts
+contain no weight values; that review is yours and the user's.
 
-The validation endpoint transmits every supplied byte to Runlocal even though it
-does not persist the request. A request to prepare locally does not authorize
-validation or upload. If the user explicitly asked to validate or upload, that
-instruction supplies the corresponding authorization; otherwise wait until the
-bundle is reviewable before asking.
+The check endpoint transmits the request text and every file included with it,
+and the validation endpoint transmits every byte of the bundle, even though
+neither persists the request. If the user explicitly asked to check, validate,
+or upload, that instruction supplies the corresponding authorization for what
+they named; otherwise wait until the request is reviewable, then ask before
+each step.
 
 ## Authenticate
 
@@ -66,9 +152,10 @@ conversation output. Verify the selected identity with the live guide's
 ## Validate and upload
 
 Encode the transport exactly as the bundle schema requires. POST it first to
-the discovered validation endpoint. Fix schema or content failures before
-uploading; do not blindly retry rejected input. On success, POST the same reviewed
-body to the discovered requests endpoint.
+the discovered validation endpoint. A rejection lists every finding, not only
+the first; fix them all before uploading, and do not blindly retry rejected
+input. On success, POST the same reviewed body to the discovered requests
+endpoint.
 
 An identical upload is safe to retry. A conflict means the same name and
 version already identify different content; inspect it and choose a truthful
