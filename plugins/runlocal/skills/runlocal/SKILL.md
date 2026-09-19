@@ -23,15 +23,20 @@ component's coverage distinct from coverage of the full model.
 
 ## Discover the current contract
 
-Start at https://www.runlocal.ai/.well-known/runlocal.json and follow its
-discovery URL. Read the linked agent guide. Fetch the schemas, capabilities,
-and public examples relevant to this task, following the returned links.
+Start at https://www.runlocal.ai/.well-known/runlocal.json. It names the public
+sign-in guide and the discovery URL. The sign-in guide is the only API document
+that needs no credentials. Discovery, the agent guide, the schemas, and the
+examples need them, and a 401 response names the same sign-in guide. Sign in as
+that guide states. Then follow the discovery URL, read the linked agent guide,
+and fetch the schemas, capabilities, and examples relevant to this task,
+following the returned links.
 
 These resources own the accepted formats, field definitions, semantic rules,
 tools, authentication, endpoints, and limits. Use them instead of remembered
 payloads or a protocol version written elsewhere. Do not invent a CLI, exporter,
-adapter, or service capability. If discovery is unavailable, local inspection
-can continue, but report that current compatibility has not been checked.
+adapter, or service capability. If discovery is unavailable, or the user does
+not want to sign in yet, local inspection can continue, but report that current
+compatibility has not been checked.
 
 ## Prepare from the actual source
 
@@ -120,8 +125,9 @@ Uploading executable content does not authorize running it remotely.
 
 ## Authenticate when needed
 
-Use `RUNLOCAL_API_KEY` as the API-key environment variable. Reuse an available
-key from it or a valid session token for the intended account. Do not put a
+Use `RUNLOCAL_API_KEY` as the API-key environment variable. When it is not set,
+look in the key file that the sign-in guide names, in the user's home folder.
+Reuse an available key or a valid session token for the intended account. Do not put a
 session token in `RUNLOCAL_API_KEY` or display the variable's value.
 If neither is available, follow the live guide's device-code login flow and let
 the user complete browser sign-in. Verify the account through the documented
@@ -135,7 +141,9 @@ does not grant permission to transmit more data than the user approved.
 
 For future use, offer an API key as an optional convenience, not a requirement
 for the current task. Create and persist one only with the user's approval of
-its purpose and secure storage location. Use a descriptive key name and a
+its purpose and storage location. The default location is the key file that the
+sign-in guide names; follow its format and access modes. Never keep a key in a
+project's `.runlocal` folder, which is checked in. Use a descriptive key name and a
 documented, session-authenticated creation interface. If the live guide does not
 expose one, direct the user to the workspace's key settings; do not call
 undocumented backend functions. Do not write credentials to the repository,
@@ -150,6 +158,11 @@ invalid content, unresolved meaning, unsupported execution, and missing evidence
 as different outcomes. Fix errors within scope. Do not erase unknowns or change
 the model to obtain a clean report. Stop and explain when progress needs a new
 user decision or unavailable capability. Do not retry unchanged invalid requests.
+
+Before a submission, read the work menu that the live guide describes. Show the
+user which kinds of work the provided information permits, and ask whether they
+can provide the next item of each kind that they want. State a want in the
+request only when the user asks for that kind of work.
 
 For submission, use the guide's validation and upload sequence. If reviewed
 content changes, review the change and confirm it remains within authorization.
