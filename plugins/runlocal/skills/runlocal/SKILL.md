@@ -5,172 +5,103 @@ description: Prepare model workloads for Runlocal from an ML codebase, assess ga
 
 # Runlocal
 
-Turn the user's model code into an honest, useful model workload request.
-Preserve its behavior, keep private values local, and make uncertainty visible.
-Submitting a request stores it for inspection; it does not start optimization.
+Turn the user's model code into an honest model workload request. Keep private
+values local and make each gap visible. A submission stores a request for
+inspection. It does not start an optimization.
+
+This skill is public and short. The Runlocal API is private and has the detail:
+formats, schemas, rules, operators, examples, and limits. Read them from the API
+each time. Do not use a remembered payload or protocol version, and do not
+invent a CLI, an exporter, or a service capability.
+
+## The user's machine
+
+Runlocal uses two folders. Do not mix them.
+
+- `~/.runlocal/` is the Runlocal config folder, in the user's home folder. It
+  holds API keys only, in `~/.runlocal/credentials.json`. The sign-in guide
+  gives the file format and the access modes.
+- `<project>/.runlocal/` is the Runlocal project folder. Put all the work for
+  the project here: request sources, prepared files, frozen revisions, receipts,
+  results, and notes. The authoring guide of the API gives the layout. Git
+  tracks this folder, so it never holds a credential, a trained weight, a
+  private sample, or a machine path. Its ignored `local/` folder holds private
+  bindings and drafts.
+
+## Authentication
+
+There are two ways. Use the first one that is available.
+
+1. An API key. Read the `RUNLOCAL_API_KEY` environment variable, then the key
+   file in `~/.runlocal/`.
+2. Device sign-in. Follow the sign-in guide. The user completes the sign-in in a
+   browser. Keep the session token in memory only, renew it as the guide states,
+   and use it for the whole task.
+
+Check the account with the authentication status route. If the account has no
+invite, stop and tell the user. Do not repeat a sign-in that was refused.
+
+After a device sign-in, you can offer an API key for future use. Create and
+store one only with the user's approval of its purpose and its location. Never
+show a credential. Never write one to a project, a request, the chat, or a log.
+
+## API discovery
+
+1. GET https://www.runlocal.ai/.well-known/runlocal.json with no credentials. It
+   names the sign-in guide and the discovery URL.
+2. Read the sign-in guide, which is public, and authenticate.
+3. GET the discovery URL. Follow its links to the agent guide, the authoring
+   guide, the schemas, the operator catalogs, the examples, and the work menu.
+
+Expect each other API route to need credentials. A 401 response names the
+sign-in guide. If the API is not available, or the user does not want to sign in
+yet, continue the local inspection. Report that you did not check the request
+against the current contract.
 
 ## Establish the task
 
-Determine whether the user wants inspection, local preparation, remote checking,
-submission, or retrieval. Do not turn local preparation into an upload workflow.
-For an existing request, use the read path; do not repeat model preparation.
-
-Inspect the code and configuration before asking questions. Establish the model
-variant, callable boundary, relevant inputs and sizes, execution mode, state,
-and intended improvement. Ask for choices the code cannot establish. Do not
-silently substitute a smaller component for the requested model. Keep a named
-component's coverage distinct from coverage of the full model.
-
-## Discover the current contract
-
-Start at https://www.runlocal.ai/.well-known/runlocal.json. It names the public
-sign-in guide and the discovery URL. The sign-in guide is the only API document
-that needs no credentials. Discovery, the agent guide, the schemas, and the
-examples need them, and a 401 response names the same sign-in guide. Sign in as
-that guide states. Then follow the discovery URL, read the linked agent guide,
-and fetch the schemas, capabilities, and examples relevant to this task,
-following the returned links.
-
-These resources own the accepted formats, field definitions, semantic rules,
-tools, authentication, endpoints, and limits. Use them instead of remembered
-payloads or a protocol version written elsewhere. Do not invent a CLI, exporter,
-adapter, or service capability. If discovery is unavailable, or the user does
-not want to sign in yet, local inspection can continue, but report that current
-compatibility has not been checked.
+Find what the user wants: inspection, local preparation, a remote check, a
+submission, or retrieval. Local preparation is not permission to upload. Read
+the code before you ask questions. Establish the model variant, the callable
+boundary, the inputs and sizes, the state, and the intended improvement. Do not
+replace the requested model with a smaller component.
 
 ## Prepare from the actual source
 
-Use the project's existing model tools and environment. Preserve the selected
-configuration, input domain, control flow, state, weight identity and sharing,
-and constants that determine behavior. Separate the source reference from any
-captured graph or proposed replacement.
+- Use the project's own model tools, and a capture path that the agent guide
+  supports. Do not rebuild an algorithm by hand to fit a format.
+- Preserve the configuration, the input domain, the control flow, the state, and
+  the identity and sharing of weights.
+- If a capture fails, record the region that has no support. Ask before you
+  narrow the scope or add a translated replacement.
+- Do not choose a tolerance, a meaning, or an input limit only to pass a check.
+  Ask the user, or record the gap.
+- Keep these apart: what you observed, assumed, and tested, and what is missing.
+  A finite comparison is evidence. It is not proof for all inputs.
 
-Use supported capture or export tooling. Do not manually reconstruct an
-algorithm just to fit a submission format. If capture fails, identify the
-affected computation and preserve its original implementation where the current
-contract permits. Record unsupported regions. Ask before narrowing scope or
-introducing a translated replacement; label that replacement as a candidate,
-not a direct export.
+## Review before you send
 
-Use declared weight interfaces to keep supplied values separate from computation.
-Synthetic weights can support local tests without disclosing trained weights;
-they do not establish trained-model accuracy. Do not hide a cast, transpose, or
-other transformation in a weight binding.
+A remote check transmits data, although it stores nothing. Act only inside the
+destination, the data, and the operation that the user approved, and ask before
+you extend that scope.
 
-Treat trained quantized codes, scales, zero points, and values derived from
-calibration as private. Keep them local unless the user has approved their exact
-disclosure. A local quantization tensor binding is relative to the weight source
-selected by the example. Confirm that this source can supply the complete stored
-tensor set. A sample, generated, or unbound weight source cannot stand in for
-that private storage. Use a public quantization-tensor file only for exact values
-that are safe to send.
+Trained weights and the values derived from them stay local: quantized codes,
+scales, zero points, and calibration results. A removed or zeroed value is not a
+faithful privacy measure. Review the real request and files, because graphs,
+names, notes, and samples can disclose information. Show a short preview first:
+the scope, the files and sizes, the values kept local, and the open gaps.
 
-Keep the function body as the float computation. The function's quantization
-overlay is the only statement that a weight or graph value is quantized. Name
-each logical target and its stored codes and parameters there. Use a storage
-extension when packing, tensor order, or another physical layout needs a
-logical-to-physical mapping. A quantized tensor type or native QDQ nodes alone
-do not mark the function as quantized.
+## Check, submit, and report
 
-Quantization does not add a fusion permission. There is no fusion field. An
-optimizer may dequantize first, keep quantized values, or use a fused kernel if
-the result follows the function contract. Do not change the float body to request
-one of those choices.
+Follow the agent guide for the check and upload sequence. Fix errors inside the
+scope. Do not erase an unknown or change the model to get a clean report, and
+do not retry an invalid request that you did not change.
 
-When the live API offers ONNX QDQ lift, use it only through the documented local
-or HTTP path. Review every finding. A supported lift needs complete direct Q to
-DQ, or DynamicQ to DQ, in the main graph under standard catalog-resolved ONNX
-semantics. One unsupported use leaves that graph unchanged. Do not manually
-remove QDQ nodes, infer parameters from names, or accept a partial lift. Static
-lifted parameters become an exact public content-addressed file, so include them
-in the disclosure review. If exact initializer values are missing, keep the graph
-unchanged and report the gap.
+Before a submission, read the work menu. Show the user the kinds of work that
+the provided information permits, and the next item that each other kind needs.
+State a want in the request only when the user asks for that kind of work.
 
-If a required tolerance, semantic choice, or input restriction is not established,
-ask or record the gap. Do not choose it merely to make a check pass.
-
-## State what is known and what was checked
-
-Distinguish source observations, assumptions, missing information, successful
-capture, source comparisons, and backend support. One does not establish another.
-Use the current contract's evidence and uncertainty fields where supported.
-Scope each concern to the affected computation, explain its consequence, and
-state what would resolve it. A subjective confidence estimate is not proof or
-a measured probability. Do not invent fields to record one.
-
-Compare the prepared computation with the original locally when both can run.
-Choose cases from the source behavior, including relevant boundaries and control
-paths. Record the exact artifacts, procedure, cases, results, and limitations.
-Distinguish source-equivalence tests from tests of an optimized replacement.
-Finite comparisons are evidence, not proof for all inputs. If tests cannot run,
-say which were not run and why.
-
-## Review disclosure before transmission
-
-Determine each tensor's origin. Keep trained weights and private derived values
-local. Retain exact public constants required by the computation; removing or
-zeroing values is not a faithful privacy measure. Resolve unclear origins before
-sending the affected artifacts.
-
-Review the actual request and selected files, not only their declared roles.
-Graphs, names, notes, samples, and source files can disclose information too.
-Show a concise transmission preview: scope, files and sizes, private values kept
-local, and remaining gaps. Do not print private tensor values or credentials.
-
-Remote checking and validation transmit data even when they do not store it.
-Act within the user's explicit authorization for the destination, data, and
-operation. Ask before expanding that scope; do not ask again for an unchanged
-action already authorized. Local preparation alone authorizes no transmission.
-Uploading executable content does not authorize running it remotely.
-
-## Authenticate when needed
-
-Use `RUNLOCAL_API_KEY` as the API-key environment variable. When it is not set,
-look in the key file that the sign-in guide names, in the user's home folder.
-Reuse an available key or a valid session token for the intended account. Do not put a
-session token in `RUNLOCAL_API_KEY` or display the variable's value.
-If neither is available, follow the live guide's device-code login flow and let
-the user complete browser sign-in. Verify the account through the documented
-authentication-status check. Use the session token for the requested task;
-do not start a new login for every POST or other authenticated request.
-
-Keep session credentials in memory. Follow the live guide for renewal when
-available, and request a new sign-in only when the session cannot be renewed.
-An access denial is not a reason to repeat login indefinitely. Authentication
-does not grant permission to transmit more data than the user approved.
-
-For future use, offer an API key as an optional convenience, not a requirement
-for the current task. Create and persist one only with the user's approval of
-its purpose and storage location. The default location is the key file that the
-sign-in guide names; follow its format and access modes. Never keep a key in a
-project's `.runlocal` folder, which is checked in. Use a descriptive key name and a
-documented, session-authenticated creation interface. If the live guide does not
-expose one, direct the user to the workspace's key settings; do not call
-undocumented backend functions. Do not write credentials to the repository,
-request artifacts, chat, or logs. If approved secure storage is unavailable,
-continue with the session instead of creating a key. Make an approved stored
-key available to future requests through `RUNLOCAL_API_KEY`.
-
-## Check and hand off
-
-Follow the live guide for local checks and authorized remote operations. Treat
-invalid content, unresolved meaning, unsupported execution, and missing evidence
-as different outcomes. Fix errors within scope. Do not erase unknowns or change
-the model to obtain a clean report. Stop and explain when progress needs a new
-user decision or unavailable capability. Do not retry unchanged invalid requests.
-
-Before a submission, read the work menu that the live guide describes. Show the
-user which kinds of work the provided information permits, and ask whether they
-can provide the next item of each kind that they want. State a want in the
-request only when the user asks for that kind of work.
-
-For submission, use the guide's validation and upload sequence. If reviewed
-content changes, review the change and confirm it remains within authorization.
-Use documented authentication without exposing secrets. For downloads, verify
-content identity before use and do not execute retrieved code merely to inspect it.
-
-Finish with the included and excluded scope, local or submitted artifact location,
-checks and their results, unresolved assumptions or blockers, and the next useful
-action. For a submission, include the returned identity and workspace link.
-Describe verification only as far as the evidence supports; upload success is
-not proof of semantic correctness, privacy, or optimization.
+Finish with the scope, the location of the artifacts, the checks and their
+results, the open assumptions, and the next useful action. For a submission,
+give the returned identity and the workspace link. An accepted upload is not
+proof of correct meaning, of privacy, or of an optimization.
