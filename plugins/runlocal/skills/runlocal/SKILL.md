@@ -9,19 +9,19 @@ Turn the user's model code into an honest model workload request. Keep private
 values local and make each gap visible. A submission stores a request for
 inspection. It does not start an optimization.
 
-This skill is public and short. The Runlocal API is private and has the detail:
+This skill is public and short. The API is private and has the detail:
 formats, schemas, rules, operators, examples, and limits. Read them from the API
 each time. Do not use a remembered payload or protocol version, and do not
 invent a CLI, an exporter, or a service capability.
 
 ## The user's machine
 
-Runlocal uses two folders. Do not mix them.
+There are two folders. Do not mix them.
 
-- `~/.runlocal/` is the Runlocal config folder, in the user's home folder. It
+- `~/.runlocal/` is the config folder, in the user's home folder. It
   holds API keys only, in `~/.runlocal/credentials.json`. The sign-in guide
   gives the file format and the access modes.
-- `<project>/.runlocal/` is the Runlocal project folder. Put all the work for
+- `<project>/.runlocal/` is the project folder. Put all the work for
   the project here: request sources, prepared files, frozen revisions, receipts,
   results, and notes. The authoring guide of the API gives the layout. Git
   tracks this folder, so it never holds a credential, a trained weight, a
