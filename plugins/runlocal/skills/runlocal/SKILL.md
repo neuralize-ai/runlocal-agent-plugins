@@ -59,7 +59,7 @@ replace the requested model with a smaller component.
 
 ## Prepare from the actual source
 
-Runlocal accepts the model as the source describes it, in the source's own
+The service accepts the model as the source describes it, in the source's own
 operator system. It asks for no conversion. How the model is captured is the
 user's call; ask when the user has not said.
 
