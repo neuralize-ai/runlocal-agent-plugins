@@ -1,0 +1,27 @@
+{
+  "name": "runlocal",
+  "version": "1.0.0",
+  "description": "Prepare, validate, and upload model graph requests through the Runlocal HTTP API.",
+  "author": {
+    "name": "Runlocal"
+  },
+  "homepage": "https://www.runlocal.ai/docs/agents",
+  "repository": "https://github.com/neuralize-ai/runlocal-agent-plugins",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Runlocal",
+    "shortDescription": "Submit a model graph through the Runlocal API.",
+    "longDescription": "Help your coding agent inspect your ML codebase, keep private weights local, and prepare, validate, and upload a model graph through Runlocal's HTTP API.",
+    "developerName": "Runlocal",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Model graph preparation",
+      "Request validation",
+      "Request uploads"
+    ],
+    "defaultPrompt": [
+      "Prepare this model graph for Runlocal and upload it through the API."
+    ],
+    "websiteURL": "https://www.runlocal.ai/docs/agents"
+  }
+}

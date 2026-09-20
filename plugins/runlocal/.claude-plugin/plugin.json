@@ -1,0 +1,13 @@
+{
+  "name": "runlocal",
+  "version": "1.0.0",
+  "description": "Prepare, validate, and upload model graph requests through the Runlocal HTTP API.",
+  "author": {
+    "name": "Runlocal"
+  },
+  "homepage": "https://www.runlocal.ai/docs/agents",
+  "repository": "https://github.com/neuralize-ai/runlocal-agent-plugins",
+  "skills": [
+    "./skills/"
+  ]
+}

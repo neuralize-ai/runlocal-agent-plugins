@@ -1,0 +1,17 @@
+{
+  "name": "runlocal",
+  "owner": {
+    "name": "Runlocal"
+  },
+  "plugins": [
+    {
+      "name": "runlocal",
+      "source": "./plugins/runlocal",
+      "description": "Prepare, validate, and upload model graph requests through the Runlocal HTTP API.",
+      "version": "1.0.0"
+    }
+  ],
+  "metadata": {
+    "description": "Runlocal skills for preparing and uploading model graph requests through the HTTP API."
+  }
+}
