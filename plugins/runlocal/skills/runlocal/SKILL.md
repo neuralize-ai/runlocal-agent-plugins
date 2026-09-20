@@ -150,6 +150,8 @@ Use this general layout, adapting it to the real model:
 
                        OUTSIDE: DOWNSTREAM
 
+```
+
 ## Check, submit, and report
 
 Follow the agent guide for the check and upload sequence. Fix errors inside the
