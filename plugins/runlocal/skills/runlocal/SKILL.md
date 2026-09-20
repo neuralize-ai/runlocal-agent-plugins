@@ -76,6 +76,80 @@ faithful privacy measure. Review the real request and files, because graphs,
 names, notes, and samples can disclose information. Show a short preview first:
 the scope, the files and sizes, the values kept local, and the open gaps.
 
+## Show extraction coverage at completion
+
+When work captures, extracts, submits, retrieves, or integrates one or more model components, include a source-derived ASCII coverage graph in the final report. Its purpose is to make the optimization boundary and its relationship to the rest of the model unambiguous.
+
+Show two levels when the evidence supports them:
+
+1. **Model-context graph**
+   - Show the selected component or fragments inside a visibly marked boundary.
+   - Show immediate upstream producers and downstream consumers outside that boundary.
+   - Label every edge crossing the boundary with the input or output field name.
+   - Include bypass, skip, shared-state, and pass-through edges that affect how the component connects to the model.
+   - When multiple fragments are captured, draw each separately and show whether they are connected or independent.
+
+2. **Captured-internals graph**
+   - Show meaningful internal stages, branches, merges, and produced outputs.
+   - Include tensor shapes, dtypes, dynamic dimensions, coordinate conventions, and relevant configuration or grid metadata when known.
+   - Show parameters, buffers, constants, and runtime inputs as different input classes when that distinction matters.
+   - If the authoritative graph treats the component as an opaque or source-defined node, say so explicitly. A source-level explanation may expand the node, but must not be presented as an operator-level captured graph.
+
+Use the actual configured execution path, source code, captured graph, and request artifacts as evidence. Do not infer connectivity merely from module names or constructor order. Mark unknown or unverified edges with `?` and explain the missing evidence.
+
+Use a consistent legend:
+
+- `╔═ ... ═╗` — inside the captured or extracted boundary
+- `[component]` — outside the boundary; shown only for model context
+- `── field: shape/dtype ──>` — tensor or structured-data flow
+- `·· config/state ··>` — metadata, parameters, buffers, or constants
+- `?` — unknown or not runtime-verified
+
+After the graph, summarize:
+
+- **Inside:** components and behavior included in the captured boundary.
+- **Outside:** neighboring components not included in optimization.
+- **Inputs:** every field read at the boundary and its producer, when known.
+- **Outputs:** every field written and its consumer, when known.
+- **Pass-through:** relevant values used downstream but not produced or modified by the captured component.
+- **Fragments:** number of captured regions and how they connect.
+- **Evidence:** what is source-derived, graph-captured, remotely validated, and runtime-verified.
+- **Gaps:** unresolved shapes, control flow, native operators, runtime equivalence, or missing environment evidence.
+
+Keep these statuses distinct:
+
+- **Requested:** the user asked for this scope.
+- **Captured:** the artifact represents this scope.
+- **Validated:** local or remote checks accepted the artifact.
+- **Optimized:** an optimization response actually provides an implementation or result.
+
+Never label a prepared, validated, or submitted request as optimized. Submission stores a request and does not itself perform optimization.
+
+Use this general layout, adapting it to the real model:
+
+```text
+                       OUTSIDE: UPSTREAM
+
+[input producer X] ── input_x ──┐
+[input producer Y] ── input_y ──┼──────────────┐
+[state/config] ··· metadata ····┘              │
+                                               ▼
+              ╔════ CAPTURED FRAGMENT A ═════════════╗
+              ║ stage → branch ─┐                    ║
+              ║         branch ─┴→ merge → output_a  ║
+              ╚══════════════════════════════════════╝
+                         │ output_a
+                         ▼
+              ╔════ CAPTURED FRAGMENT B ═════════════╗
+              ║ operation → output_b                 ║
+              ╚══════════════════════════════════════╝
+                    │                 │
+                    │ output_b        │ auxiliary_out
+                    ▼                 ▼
+          [downstream consumer Z]   [consumer W]
+
+                       OUTSIDE: DOWNSTREAM
+
 ## Check, submit, and report
 
 Follow the agent guide for the check and upload sequence. Fix errors inside the
