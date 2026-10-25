@@ -1,13 +1,13 @@
 ---
 name: runlocal
-description: Prepare model workloads for Runlocal from an ML codebase, assess gaps and evidence, and check or submit requests when asked. Also use to inspect or retrieve existing Runlocal requests, and to integrate a response into the code. Keep private weights local.
+description: Prepare model workloads for Runlocal from an ML codebase, assess gaps and evidence, and check or submit requests when asked. Also use to send the details and priority of a Runlocal service request, follow its status and billing, inspect or retrieve existing requests, work the staff review queue with a staff key, and integrate a response into the code. Keep private weights local.
 ---
 
 # Runlocal
 
 Turn the user's model code into an honest model workload request. Keep private
-values local and make each gap visible. A submission stores a request for
-inspection. It does not start an optimization.
+values local and make each gap visible. An upload stores a request and opens a
+service request. It does not start an optimization.
 
 This skill is public and short. The API is private and has the detail, as
 structured documents: schemas, rules, operators, examples, and limits. Read them
@@ -52,7 +52,8 @@ did not check the request against the current contract.
 ## Establish the task
 
 Find what the user wants: inspection, local preparation, a remote check, a
-submission, retrieval, or the integration of a response. Local preparation is not permission to upload. Read
+submission, the details or the status of a service request, billing, staff
+review, retrieval, or the integration of a response. Local preparation is not permission to upload. Read
 the code before you ask questions. Establish the model variant, the callable
 boundary, the inputs and sizes, the state, and the intended improvement. Do not
 replace the requested model with a smaller component.
@@ -169,6 +170,36 @@ Finish with the scope, the location of the artifacts, the checks and their
 results, the open assumptions, and the next useful action. For a submission,
 give the returned identity and the workspace link. An accepted upload is not
 proof of correct meaning, of privacy, or of an optimization.
+
+## Send the details and follow the service request
+
+An upload returns a `service_request_id`. The service request stays a draft
+until its details are submitted, and staff start work only after a review. The
+API does each step, so the user does not need the workspace. OpenAPI states
+each body; do not guess a field.
+
+- `PUT /api/v1/service-requests/{id}/details` sets the title, the use case, the
+  contexts, the priority, the targets, and the goals. It returns the gaps. With
+  `submit: true`, a complete request goes to review.
+- `GET /api/v1/service-requests` and `GET /api/v1/service-requests/{id}` give
+  the state, the place in the queue, the open question, and the published
+  results.
+- `POST /api/v1/service-requests/{id}/reply` answers staff, and
+  `POST /api/v1/service-requests/{id}/cancel` cancels.
+- `GET /api/v1/billing` gives the plan, the requests that it includes, and the
+  charges.
+
+Take the targets, the goals, and the priority from the user or the code, not
+from a guess. Use only a device that the API names. Show the details before you
+send them, and submit only with the approval of the user. The details can
+change only while the request is a draft or has a change request. The priority
+orders the queue. It does not promise a date.
+
+A staff key also reaches `/api/v1/admin/requests` and `/api/v1/admin/billing`:
+the queue in work order, the review actions, the priority, the size, the
+assignee, the outcome, and the terms of a plan. These change what a customer
+sees and pays. Do only the action that the user names, on the request that the
+user names, and report each change.
 
 ## Integrate a response
 
