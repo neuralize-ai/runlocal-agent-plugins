@@ -58,6 +58,16 @@ the code before you ask questions. Establish the model variant, the callable
 boundary, the inputs and sizes, the state, and the intended improvement. Do not
 replace the requested model with a smaller component.
 
+Establish the targets and the goals too. A target device is often outside the
+project, reached through a CLI or SSH, so the code may not name it. Look in the
+code, the configs, the README, and the build and deploy scripts: they can name
+a device, a software stack, a precision, or a budget. For each target, find the
+device and its memory variant, the power mode, and the software versions. For
+each goal, find the metric, the threshold, the baseline, the input sizes, and
+the accuracy that must hold. When a value is not clear from these, ask the
+user. Never fill a value with a guess or a typical number, and ask before you
+connect to a device to find one.
+
 ## Prepare from the actual source
 
 The service accepts the model as the source describes it, in the source's own
