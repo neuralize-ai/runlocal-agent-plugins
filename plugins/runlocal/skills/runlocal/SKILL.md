@@ -202,8 +202,10 @@ each body; do not guess a field.
   `GET .../deliveries/{version}/files/{path}` downloads one file, and
   `POST .../deliveries/{version}/links` signs the links for many. "Integrate a
   response" tells how to use them.
-- `GET /api/v1/billing` gives the plan, the requests that it includes, and the
-  charges.
+- `GET /api/v1/billing` gives the plan of your company, the requests that it
+  includes, and the charges. Everyone in the company shares the plan, so the
+  list also has the requests of colleagues, with the email of the person who
+  started each one.
 
 Take the targets, the goals, and the priority from the user or the code, not
 from a guess. Use only a device that the API names. Show the details before you
@@ -211,11 +213,20 @@ send them, and submit only with the approval of the user. The details can
 change only while the request is a draft or has a change request. The priority
 orders the queue. It does not promise a date.
 
-A staff key also reaches `/api/v1/admin/requests` and `/api/v1/admin/billing`:
-the queue in work order, the review actions, the priority, the size, the
-assignee, the outcome, the delivered files, and the terms of a plan. These
-change what a customer sees and pays. Do only the action that the user names,
-on the request that the user names, and report each change.
+A staff key also reaches `/api/v1/admin/requests`, `/api/v1/admin/billing`, and
+`/api/v1/admin/companies`: the queue in work order, the review actions, the
+priority, the size, the assignee, the outcome, the delivered files, the
+companies, and the plan of each company. These change what a customer sees and
+pays. Do only the action that the user names, on the request or the company
+that the user names, and report each change.
+
+A customer is a company. Each account whose email is in the company, or is at a
+domain that the company claims, shares the plan of the company. To put a new
+customer on a plan, make the company with `POST /api/v1/admin/companies`, then
+set its plan with `PUT /api/v1/admin/billing/{company_id}/plan`.
+`PUT /api/v1/admin/companies/{company_id}` sets the name and the people of a
+company: each email or domain that is not in the list is removed, and the
+accounts that it named leave the company.
 
 To deliver files, a staff agent opens a draft with
 `POST /api/v1/admin/requests/{id}/deliveries`, sets its files and their
