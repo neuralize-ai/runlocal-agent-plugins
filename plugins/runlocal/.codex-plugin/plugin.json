@@ -1,6 +1,6 @@
 {
   "name": "runlocal",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Prepare, validate, upload, and follow model graph requests through the Runlocal HTTP API.",
   "author": {
     "name": "Runlocal"
