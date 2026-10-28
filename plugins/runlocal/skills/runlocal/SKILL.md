@@ -1,6 +1,6 @@
 ---
 name: runlocal
-description: Prepare model workloads for Runlocal from an ML codebase, assess gaps and evidence, and check or submit requests when asked. Also use to send the details and priority of a Runlocal service request, follow its status and billing, inspect or retrieve existing requests, work the staff review queue with a staff key, and integrate a response into the code. Keep private weights local.
+description: Prepare model workloads for Runlocal from an ML codebase, assess gaps and evidence, and check or submit requests when asked. Also use to send the details and priority of a Runlocal service request, follow its status, results, and billing, read and post its comments, inspect or retrieve existing requests, work the staff review queue and post progress with measurements as staff or as RunLocal Agent with a staff key, and integrate a response into the code. Keep private weights local.
 ---
 
 # Runlocal
@@ -52,11 +52,12 @@ did not check the request against the current contract.
 ## Establish the task
 
 Find what the user wants: inspection, local preparation, a remote check, a
-submission, the details or the status of a service request, billing, staff
-review, retrieval, or the integration of a response. Local preparation is not permission to upload. Read
-the code before you ask questions. Establish the model variant, the callable
-boundary, the inputs and sizes, the state, and the intended improvement. Do not
-replace the requested model with a smaller component.
+submission, the details, the status, or the comments of a service request,
+billing, staff review or progress, retrieval, or the integration of a response.
+Local preparation is not permission to upload. Read the code before you ask
+questions. Establish the model variant, the callable boundary, the inputs and
+sizes, the state, and the intended improvement. Do not replace the requested
+model with a smaller component.
 
 Establish the targets and the goals too. A target device is often outside the
 project, reached through a CLI or SSH, so the code may not name it. Look in the
@@ -192,10 +193,18 @@ each body; do not guess a field.
   contexts, the priority, the targets, and the goals. It returns the gaps. With
   `submit: true`, a complete request goes to review.
 - `GET /api/v1/service-requests` and `GET /api/v1/service-requests/{id}` give
-  the state, the place in the queue, the open question, and the published
-  results.
+  the state, the place in the queue, the open question, the progress updates,
+  and the published results. The results can name the version of the
+  delivered files that they describe, in `delivery_version`. The request page
+  draws one chart for each goal from the measurements of the updates.
 - `POST /api/v1/service-requests/{id}/reply` answers staff, and
   `POST /api/v1/service-requests/{id}/cancel` cancels.
+- `GET /api/v1/service-requests/{id}/comments` gives the comments, newest
+  first, and the `people` that a comment can mention. `POST` on the same route
+  posts a comment, or a reply with the id of a comment in `reply_to`. The
+  customer and RunLocal read each comment. The owner of the request, and each
+  colleague that a comment mentions, can read and post. Read the thread before
+  you write. Show the user the text, and post only when the user asks.
 - `GET /api/v1/service-requests/{id}/deliveries` lists the versions of the
   files that RunLocal delivered. `GET .../deliveries/{version}` gives the files
   of one version, with the size and the SHA-256 of each.
@@ -208,17 +217,23 @@ each body; do not guess a field.
   started each one.
 
 Take the targets, the goals, and the priority from the user or the code, not
-from a guess. Use only a device that the API names. Show the details before you
-send them, and submit only with the approval of the user. The details can
-change only while the request is a draft or has a change request. The priority
-orders the queue. It does not promise a date.
+from a guess. Use only a device that the API names. Each device has a status.
+A target can name a production device, or a calibrating device, which RunLocal
+calibrates now. A calibrating device can have no release in the catalog: then
+give the exact release that the device runs. A device that is coming soon is
+not a target yet, and the API refuses it with the reason. Tell the user, and do
+not put another device in its place. Show the details before you send them,
+and submit only with the approval of the user. The details can change only
+while the request is a draft or has a change request. The priority orders the
+queue. It does not promise a date.
 
 A staff key also reaches `/api/v1/admin/requests`, `/api/v1/admin/billing`, and
 `/api/v1/admin/companies`: the queue in work order, the review actions, the
-priority, the size, the assignee, the outcome, the delivered files, the
-companies, and the plan of each company. These change what a customer sees and
-pays. Do only the action that the user names, on the request or the company
-that the user names, and report each change.
+priority, the size, the assignee and RunLocal Agent, the comments, the progress
+updates, the outcome, the delivered files, the companies, and the plan of each
+company. These change what a customer sees and pays. Do only the action that
+the user names, on the request or the company that the user names, and report
+each change.
 
 A customer is a company. Each account whose email is in the company, or is at a
 domain that the company claims, shares the plan of the company. To put a new
@@ -228,19 +243,42 @@ set its plan with `PUT /api/v1/admin/billing/{company_id}/plan`.
 company: each email or domain that is not in the list is removed, and the
 accounts that it named leave the company.
 
+RunLocal Agent is the worker of RunLocal on a request, beside the assignee.
+`PATCH /api/v1/admin/requests/{id}` with `agent_assigned: true` assigns it, and
+`false` removes it. Staff can post as RunLocal Agent only while it is
+assigned: send `author: "runlocal_agent"` on a comment, a reply, or a progress
+update. The customer reads only "RunLocal Agent". Staff also read who posted
+it. `GET /api/v1/admin/requests/{id}/comments` gives every comment, internal
+ones too, and `POST` posts one. A comment is for the customer unless its
+`visibility` is `internal`.
+
+`POST /api/v1/admin/requests/{id}/updates` posts a progress update or an
+internal note. After approval, an update that the customer reads can carry
+`measurements`. Each one gives the goal, the target, the value in the unit of
+the goal, a label for the build, and `baseline` for the model as it came. Add
+the `interval`, the `samples`, and the `method` when you know them. Give
+`measured_at` as the real time of the run, in milliseconds since the Unix
+epoch, not the time of the post. Post only a value from a real run, never an
+estimate.
+
 To deliver files, a staff agent opens a draft with
 `POST /api/v1/admin/requests/{id}/deliveries`, sets its files and their
 digests with `PUT .../deliveries/{delivery}/files`, uploads each new file to
 the signed URL that `POST .../uploads` returns, and then calls `.../verify`.
 A file that an earlier version holds is not uploaded again. `.../publish`
-shows the version to the customer; publish only when the user says so.
+shows the version to the customer; publish only when the user says so. The
+results can link a published version: name it as `delivery_version` in the
+outcome draft, `PUT /api/v1/admin/requests/{id}/outcome`, then publish the
+draft with `.../outcome/publish`. Publish the files before the results.
 
 ## Integrate a response
 
 RunLocal answers a request with delivered files. A version can hold optimized
 models and engines, kernels, code, configs, a README, learnings, and a
 PROMPT.md with the steps that RunLocal suggests. A new version keeps the
-earlier ones.
+earlier ones. The published results can name, in `delivery_version`, the
+version that they describe. The measurements of each build are in the progress
+updates, and the request page draws them.
 
 1. Read the version. Download each file into
    `.runlocal/deliveries/{id}/v{version}/` at its path, and compare its SHA-256
