@@ -1,6 +1,6 @@
 ---
 name: runlocal
-description: Prepare model workloads for Runlocal from an ML codebase, assess gaps and evidence, and check or submit requests when asked. Also use to send the details and priority of a Runlocal service request, follow its status, results, and billing, read and post its comments, inspect or retrieve existing requests, work the staff review queue and post progress with measurements as staff or as RunLocal Agent with a staff key, and integrate a response into the code. Keep private weights local.
+description: Prepare model workloads for Runlocal from an ML codebase, assess gaps and evidence, and check or submit requests when asked. Also use to send the details and priority of a Runlocal service request, follow its status, results, measurements, and billing, read and post its comments, inspect or retrieve existing requests, work the staff review queue, post, correct, and read back progress measurements as staff or as RunLocal Agent with a staff key, and integrate a response into the code. Keep private weights local.
 ---
 
 # Runlocal
@@ -195,8 +195,13 @@ each body; do not guess a field.
 - `GET /api/v1/service-requests` and `GET /api/v1/service-requests/{id}` give
   the state, the place in the queue, the open question, the progress updates,
   and the published results. The results can name the version of the
-  delivered files that they describe, in `delivery_version`. The request page
-  draws one chart for each goal from the measurements of the updates.
+  delivered files that they describe, in `delivery_version`.
+- `GET /api/v1/service-requests/{id}/measurements` gives the measurements
+  that RunLocal posted with its updates: each goal with the limit on each
+  target, and each current measurement with its result against the limit that
+  applied when it was posted. The request page draws one chart for each goal
+  from the same data. Read this route to report progress to the user; the
+  updates of the request do not hold the values.
 - `POST /api/v1/service-requests/{id}/reply` answers staff, and
   `POST /api/v1/service-requests/{id}/cancel` cancels.
 - `GET /api/v1/service-requests/{id}/comments` gives the comments, newest
@@ -253,13 +258,33 @@ ones too, and `POST` posts one. A comment is for the customer unless its
 `visibility` is `internal`.
 
 `POST /api/v1/admin/requests/{id}/updates` posts a progress update or an
-internal note. After approval, an update that the customer reads can carry
-`measurements`. Each one gives the goal, the target, the value in the unit of
-the goal, a label for the build, and `baseline` for the model as it came. Add
-the `interval`, the `samples`, and the `method` when you know them. Give
-`measured_at` as the real time of the run, in milliseconds since the Unix
-epoch, not the time of the post. Post only a value from a real run, never an
-estimate.
+internal note. After approval, only an update that the customer reads can
+carry `measurements`, and each value must come from a real run, never from an
+estimate. Each one gives the goal, the target, the value in the unit of the
+goal, a label for the build, and `baseline` for the model as it came. Add the
+`interval`, the `samples`, and the `method` when you know them.
+
+- `measured_at` is the real time of the run, in milliseconds since the Unix
+  epoch: not seconds, and not the time of the post. It cannot be in the
+  future, or more than a year before the request was made.
+- `series`, with a `key` and a `label`, puts a second metric on the chart of a
+  goal, such as the VP exec time beside the VP time. Send the same key for the
+  same metric in each update. Leave it out for the goal's own metric: the
+  limit, the result, and the change from the baseline use only that metric.
+- `correction_of` corrects an earlier update of the same visibility: give its
+  id from `activity`. Its measurements replace the current measurements of
+  the full chain of corrections, so the newest correction with measurements
+  wins. Repeat each value that stays. The original stays in the history. A
+  correction changes what the customer sees: send it only for the update that
+  the user names.
+- `idempotency_key` is a key of your choice for the post. Send one with each
+  post, and the same one when you retry after a timeout: the retry then adds
+  nothing.
+
+`GET /api/v1/admin/requests/{id}/measurements` gives the same document that
+the customer reads. After a post, read it to check what the update stored.
+Its `count` and `limit` tell how many current measurements the request can
+still hold.
 
 To deliver files, a staff agent opens a draft with
 `POST /api/v1/admin/requests/{id}/deliveries`, sets its files and their
@@ -277,8 +302,9 @@ RunLocal answers a request with delivered files. A version can hold optimized
 models and engines, kernels, code, configs, a README, learnings, and a
 PROMPT.md with the steps that RunLocal suggests. A new version keeps the
 earlier ones. The published results can name, in `delivery_version`, the
-version that they describe. The measurements of each build are in the progress
-updates, and the request page draws them.
+version that they describe. The measurements of each build are at
+`GET /api/v1/service-requests/{id}/measurements`, and the request page draws
+them.
 
 1. Read the version. Download each file into
    `.runlocal/deliveries/{id}/v{version}/` at its path, and compare its SHA-256
