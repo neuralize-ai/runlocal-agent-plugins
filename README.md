@@ -28,6 +28,10 @@ The skill can be selected automatically. You can also invoke `$runlocal` in
 Codex or `/runlocal:runlocal` in Claude Code. To prepare without sending data,
 ask the agent to stop after the upload preview.
 
+After an upload, the agent can send the details of the service request, follow
+its status and billing, and answer staff through the same API. With a staff key,
+it can also work the review queue.
+
 The plugin needs no Runlocal CLI, Python package, MCP server, or background hook.
 It reads the live API guide and schemas, then uses an existing environment API
 key or the documented WorkOS browser device flow. Model export still uses the
