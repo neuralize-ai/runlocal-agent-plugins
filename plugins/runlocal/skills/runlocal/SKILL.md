@@ -192,6 +192,12 @@ each body; do not guess a field.
 - `PUT /api/v1/service-requests/{id}/details` sets the title, the use case, the
   contexts, the priority, the targets, and the goals. It returns the gaps. With
   `submit: true`, a complete request goes to review.
+- `/api/v1/service-requests/{id}/files` holds the other files of a request,
+  such as its test data: `GET` lists them and what they still need, `POST`
+  adds a record, `POST .../{record}/uploads` gives a signed URL for the bytes
+  of one file, and `POST .../{record}/{file}/finish` checks them. Only the
+  requester uploads. Upload only files that the user names, with their
+  rights confirmed by the user.
 - `GET /api/v1/service-requests` and `GET /api/v1/service-requests/{id}` give
   the state, the place in the queue, the open question, the progress updates,
   and the published results. The results can name the version of the
@@ -210,6 +216,9 @@ each body; do not guess a field.
   customer and RunLocal read each comment. The owner of the request, and each
   colleague that a comment mentions, can read and post. Read the thread before
   you write. Show the user the text, and post only when the user asks.
+  `PATCH` and `DELETE` on `.../comments/{comment_id}` change or delete a
+  comment of its author, on a request, its deliveries, a file set, or a known
+  issue; do it only when the user asks.
 - `GET /api/v1/service-requests/{id}/deliveries` lists the versions of the
   files that RunLocal delivered. `GET .../deliveries/{version}` gives the files
   of one version, with the size and the SHA-256 of each.
@@ -276,7 +285,10 @@ assigned: send `author: "runlocal_agent"` on a comment, a reply, or a progress
 update. The customer reads only "RunLocal Agent". Staff also read who posted
 it. `GET /api/v1/admin/requests/{id}/comments` gives every comment, internal
 ones too, and `POST` posts one. A comment is for the customer unless its
-`visibility` is `internal`.
+`visibility` is `internal`. `GET /api/v1/admin/requests/{id}/files` lists
+the files of the submission with their security review, and
+`POST .../files/{record}/{file}/review` records a review; review only when the
+user says so.
 
 `POST /api/v1/admin/requests/{id}/updates` posts a progress update or an
 internal note. After approval, only an update that the customer reads can
