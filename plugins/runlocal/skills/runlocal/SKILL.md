@@ -234,9 +234,9 @@ queue. It does not promise a date.
 
 A staff key also reaches `/api/v1/admin/requests`, `/api/v1/admin/billing`, and
 `/api/v1/admin/companies`: the queue in work order, the review actions, the
-priority, the size, the assignee and RunLocal Agent, the comments, the progress
-updates, the outcome, the delivered files, the companies, and the plan of each
-company. These change what a customer sees and pays. Do only the action that
+priority, the size, the assignee and RunLocal Agent, the company of a request,
+the comments, the progress updates, the outcome, the delivered files, the
+companies, and the plan of each company. These change what a customer sees and pays. Do only the action that
 the user names, on the request or the company that the user names, and report
 each change.
 
@@ -247,6 +247,16 @@ set its plan with `PUT /api/v1/admin/billing/{company_id}/plan`.
 `PUT /api/v1/admin/companies/{company_id}` sets the name and the people of a
 company: each email or domain that is not in the list is removed, and the
 accounts that it named leave the company.
+
+A RunLocal engineer can raise a request for a company. Then
+`PATCH /api/v1/admin/requests/{id}` with `company_id` sets its company, and
+`null` gives it the company of its requester again. When the request first
+gets a company, it is private to RunLocal and at no charge.
+`private_to_runlocal: false` lets the people of the company see it, and
+`no_charge: false` makes it use a slot of the plan. Share a request and put it
+on the plan only when the user says so.
+`POST /api/v1/admin/requests/{id}/contact` chooses the person of the company
+who answers for it.
 
 RunLocal Agent is the worker of RunLocal on a request, beside the assignee.
 `PATCH /api/v1/admin/requests/{id}` with `agent_assigned: true` assigns it, and
