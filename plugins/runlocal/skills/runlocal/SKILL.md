@@ -248,6 +248,17 @@ set its plan with `PUT /api/v1/admin/billing/{company_id}/plan`.
 company: each email or domain that is not in the list is removed, and the
 accounts that it named leave the company.
 
+A staff key also reaches `/api/v1/admin/engagements`. An engagement is the
+work with one company, in phases. To set one up, make the company first, then
+`POST /api/v1/admin/engagements` with `company_id`, `name`, and its `phases`
+in order. `billing: "no_charge"` makes the requests of an engagement use no
+slot of the plan. `GET .../{id}/candidates` lists the requests that can go in,
+and `POST .../{id}/service-requests` puts them in, with the `phase_id` of a
+phase or `null`. `.../service-requests/move` moves them to another phase,
+`PUT .../{id}/phases` changes the phases, and `POST .../{id}/members` invites
+a person of the company. Send an `idempotency_key` when you make an
+engagement. Ask the user for each name, phase, and email; do not guess them.
+
 A RunLocal engineer can raise a request for a company. Then
 `PATCH /api/v1/admin/requests/{id}` with `company_id` sets its company, and
 `null` gives it the company of its requester again. When the request first
