@@ -256,6 +256,12 @@ set its plan with `PUT /api/v1/admin/billing/{company_id}/plan`.
 `PUT /api/v1/admin/companies/{company_id}` sets the name and the people of a
 company: each email or domain that is not in the list is removed, and the
 accounts that it named leave the company.
+An email in a company invites its person: they can sign up and sign in with
+it, and they get an email with the link when the deployment sends email. While
+`signed_in` is `false`, its `invite_link` signs them up with that email, and
+`POST /api/v1/admin/companies/{company_id}/invites/{email}` sends the
+invitation again. A domain adds the people at it who sign up, but lets no one
+sign up. Invite a person only when the user names them.
 
 A staff key also reaches `/api/v1/admin/engagements`. An engagement is the
 work with one company, in phases. To set one up, make the company first, then
