@@ -261,7 +261,11 @@ it, and they get an email with the link when the deployment sends email. While
 `signed_in` is `false`, its `invite_link` signs them up with that email, and
 `POST /api/v1/admin/companies/{company_id}/invites/{email}` sends the
 invitation again. A domain adds the people at it who sign up, but lets no one
-sign up. Invite a person only when the user names them.
+sign up. `POST /api/v1/admin/invites` with `emails` invites people on their
+own, such as with a gmail.com address: each can sign up and sign in, is in no
+company, and sees only the requests of their account until a company adds
+their email. `POST /api/v1/admin/invites/{email}` sends that invitation again.
+Invite a person only when the user names them.
 
 A staff key also reaches `/api/v1/admin/engagements`. An engagement is the
 work with one company, in phases. To set one up, make the company first, then
