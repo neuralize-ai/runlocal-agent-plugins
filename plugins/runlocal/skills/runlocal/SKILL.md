@@ -268,6 +268,20 @@ phase or `null`. `.../service-requests/move` moves them to another phase,
 a person of the company. Send an `idempotency_key` when you make an
 engagement. Ask the user for each name, phase, and email; do not guess them.
 
+`GET /api/v1/engagements/{id}/results` reads the published results of the
+requests of an engagement side by side, and a staff key reads them under
+`/api/v1/admin/engagements/{id}/results`. The Results tab is also a workspace
+of its reader: `GET .../results/workspace` reads it, `PUT` replaces it, and
+`DELETE` forgets it. A row is `{service_request_id}:{target_id}`, or
+`{service_request_id}:none`, and a measure is `{name}|{unit}`. To add a chart,
+read the workspace, add the chart to `arrangement.charts` and its id to a
+section, and send it back; when `arrangement` is `null`, start a new section.
+`hidden` lists the rows that the charts leave out, and `colours` the colours
+the person chose. A staff key keeps the default view, which a person with none
+of their own starts from, with `PUT` or `DELETE
+/api/v1/admin/engagements/{id}/results/default-view`. Change a person's
+workspace only when they ask.
+
 A RunLocal engineer can raise a request for a company. Then
 `PATCH /api/v1/admin/requests/{id}` with `company_id` sets its company, and
 `null` gives it the company of its requester again. When the request first
