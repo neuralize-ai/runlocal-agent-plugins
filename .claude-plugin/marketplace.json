@@ -8,7 +8,7 @@
       "name": "runlocal",
       "source": "./plugins/runlocal",
       "description": "Prepare, validate, upload, and follow model graph requests through the Runlocal HTTP API.",
-      "version": "1.6.0"
+      "version": "1.7.0"
     }
   ],
   "metadata": {
