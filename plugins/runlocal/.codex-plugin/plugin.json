@@ -1,0 +1,27 @@
+{
+  "name": "runlocal",
+  "version": "2.0.0",
+  "description": "Sign in to Runlocal and use its HTTP API from a coding agent.",
+  "author": {
+    "name": "Runlocal"
+  },
+  "homepage": "https://www.runlocal.ai/docs/agents",
+  "repository": "https://github.com/neuralize-ai/runlocal-agent-plugins",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Runlocal",
+    "shortDescription": "Sign in to Runlocal and use its API.",
+    "longDescription": "Help your coding agent sign in to Runlocal, keep its API key safe, and find the Runlocal HTTP API. Private weights stay in your environment.",
+    "developerName": "Runlocal",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Runlocal sign-in",
+      "API key setup",
+      "API discovery"
+    ],
+    "defaultPrompt": [
+      "Sign in to Runlocal and find its API."
+    ],
+    "websiteURL": "https://www.runlocal.ai/docs/agents"
+  }
+}

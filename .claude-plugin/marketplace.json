@@ -1,0 +1,17 @@
+{
+  "name": "runlocal",
+  "owner": {
+    "name": "Runlocal"
+  },
+  "plugins": [
+    {
+      "name": "runlocal",
+      "source": "./plugins/runlocal",
+      "description": "Sign in to Runlocal and use its HTTP API from a coding agent.",
+      "version": "2.0.0"
+    }
+  ],
+  "metadata": {
+    "description": "The Runlocal skill: sign in to Runlocal and use its HTTP API."
+  }
+}

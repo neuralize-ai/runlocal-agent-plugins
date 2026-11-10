@@ -1,0 +1,20 @@
+{
+  "name": "runlocal",
+  "interface": {
+    "displayName": "Runlocal"
+  },
+  "plugins": [
+    {
+      "name": "runlocal",
+      "source": {
+        "source": "local",
+        "path": "./plugins/runlocal"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
