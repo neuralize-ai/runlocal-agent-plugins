@@ -5,10 +5,10 @@ description: Sign in to Runlocal and reach its HTTP API with an API key. Use for
 
 # Runlocal
 
-This skill tells how to sign in to Runlocal and find its API. It is public and
-short. The API is private, and its agent guide gives each step of the work.
-Read the guide from the API each time. Do not use a remembered route, payload,
-or version, and do not invent a CLI or a service capability.
+This skill tells how to sign in and find the API. It is public and short. The
+API is private, and its agent guide gives each step of the work. Read the
+guide from the API each time. Do not use a remembered route, payload, or
+version, and do not invent a CLI or a service capability.
 
 ## The user's machine
 
@@ -38,5 +38,5 @@ does not want to sign in, tell the user, and send nothing.
 
 ## Before you send
 
-Send data to Runlocal only for the work that the user asked for, and ask before
-an upload. Keep trained weights and other private values on the user's machine.
+Send data only for the work that the user asked for, and ask before an upload.
+Keep trained weights and other private values on the user's machine.
