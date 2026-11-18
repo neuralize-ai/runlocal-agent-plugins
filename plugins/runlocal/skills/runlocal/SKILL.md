@@ -17,8 +17,8 @@ keys only. Never put a key in a project, a request, the chat, or a log.
 
 ## The rlx command
 
-With Node 22 or newer, `npm install -g @runlocal/cli` installs `rlx` (or run
-each command with `npx @runlocal/cli` in place of `rlx`). `rlx login` signs
+With Node 22 or newer, `npm install -g @runlocal-ai/cli` installs `rlx` (or run
+each command with `npx @runlocal-ai/cli` in place of `rlx`). `rlx login` signs
 in with the device sign-in and keeps the key in
 `~/.runlocal/credentials.json`. After the sign-in, `rlx help` lists the
 commands of the account: prefer them to hand-written HTTP calls, and use only
