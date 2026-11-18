@@ -8,12 +8,21 @@ description: Sign in to Runlocal and reach its HTTP API with an API key. Use for
 This skill tells how to sign in and find the API. It is public and short. The
 API is private, and its agent guide gives each step of the work. Read the
 guide from the API each time. Do not use a remembered route, payload, or
-version, and do not invent a CLI or a service capability.
+version, and do not invent a command or a service capability.
 
 ## The user's machine
 
 `~/.runlocal/` is the config folder, in the user's home folder. It holds API
 keys only. Never put a key in a project, a request, the chat, or a log.
+
+## The rlx command
+
+With Node 22 or newer, `npm install -g @runlocal-ai/cli` installs `rlx` (or run
+each command with `npx @runlocal-ai/cli` in place of `rlx`). `rlx login` signs
+in with the device sign-in and keeps the key in
+`~/.runlocal/credentials.json`. After the sign-in, `rlx help` lists the
+commands of the account: prefer them to hand-written HTTP calls, and use only
+commands that it lists. Without Node, use the HTTP API below.
 
 ## Authentication
 

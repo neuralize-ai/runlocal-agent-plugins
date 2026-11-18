@@ -8,7 +8,7 @@
       "name": "runlocal",
       "source": "./plugins/runlocal",
       "description": "Sign in to Runlocal and use its HTTP API from a coding agent.",
-      "version": "2.0.0"
+      "version": "2.1.0"
     }
   ],
   "metadata": {
